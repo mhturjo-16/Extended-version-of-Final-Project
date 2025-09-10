@@ -1,3 +1,4 @@
+// lib/pages/signin_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/auth/auth_service.dart';
 
@@ -88,7 +89,10 @@ class _SigninPageState extends State<SigninPage> {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: signIn,
-                  child: const Text('Sign In'),
+                  child: const Text(
+                    'Sign In',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     minimumSize: const Size(200, 50),

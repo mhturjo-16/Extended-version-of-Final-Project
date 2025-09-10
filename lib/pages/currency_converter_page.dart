@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/db/note_db.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CurrencyConverterPage extends StatefulWidget {
   const CurrencyConverterPage({super.key});
@@ -27,8 +28,22 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
   String fromCurrency = 'USD';
   String toCurrency = 'BDT';
 
-  // Note save function
+  // 🔹 Currency convert function
+  void convert() {
+    final amount = double.tryParse(amountController.text);
+    if (amount == null || amount <= 0) return;
+
+    final usdAmount = amount / rates[fromCurrency]!;
+    final converted = usdAmount * rates[toCurrency]!;
+
+    setState(() {
+      result = converted;
+    });
+  }
+
+  // 🔹 Add new note
   void addNewNote() {
+    noteController.clear();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -47,25 +62,22 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           ),
           TextButton(
             onPressed: () async {
-              final newNote = noteController.text;
+              final newNote = noteController.text.trim();
               if (newNote.isNotEmpty) {
                 try {
-                  await noteDb.createNote(newNote); // Save to Supabase
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Note saved successfully!")),
-                    );
-                  }
+                  await noteDb.createNote(newNote);
+                  if (mounted) setState(() {}); // Refresh notes
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Note saved successfully!")),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
-                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text("Error: $e")));
                 }
               }
-              Navigator.pop(context);
-              noteController.clear();
             },
             child: const Text("Save"),
           ),
@@ -74,17 +86,70 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
     );
   }
 
-  // Currency convert function
-  void convert() {
-    final amount = double.tryParse(amountController.text);
-    if (amount == null || amount <= 0) return;
+  // 🔹 Edit note
+  void editNote(Map<String, dynamic> note) {
+    noteController.text = note['content'];
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Note"),
+        content: TextField(controller: noteController),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              final updatedNote = noteController.text.trim();
+              if (updatedNote.isNotEmpty) {
+                try {
+                  await noteDb.updateNote(note['id'], updatedNote);
+                  if (mounted) setState(() {});
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Note updated successfully!")),
+                  );
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                }
+              }
+            },
+            child: const Text("Update"),
+          ),
+        ],
+      ),
+    );
+  }
 
-    final usdAmount = amount / rates[fromCurrency]!;
-    final converted = usdAmount * rates[toCurrency]!;
+  // 🔹 Delete note
+  void deleteNote(int noteId) async {
+    try {
+      await noteDb.deleteNote(noteId);
+      if (mounted) setState(() {});
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Note deleted!")));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
 
-    setState(() {
-      result = converted;
-    });
+  // 🔹 Fetch notes for current user
+  Future<List<Map<String, dynamic>>> fetchUserNotes() async {
+    try {
+      return await noteDb.getUserNotes();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error fetching notes: $e")));
+      return [];
+    }
   }
 
   @override
@@ -101,11 +166,11 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Currency converter section
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
@@ -142,12 +207,60 @@ class _CurrencyConverterPageState extends State<CurrencyConverterPage> {
               'Result: ${result.toStringAsFixed(2)} $toCurrency',
               style: const TextStyle(fontSize: 20),
             ),
+            const SizedBox(height: 40),
+
+            // Notes section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Your Notes',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(onPressed: addNewNote, icon: const Icon(Icons.add)),
+              ],
+            ),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: fetchUserNotes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final notes = snapshot.data ?? [];
+                if (notes.isEmpty) {
+                  return const Text("No notes yet.");
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: notes.length,
+                  itemBuilder: (context, index) {
+                    final note = notes[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      child: ListTile(
+                        title: Text(note['content']),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => editNote(note),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => deleteNote(note['id']),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: addNewNote, // Save note to Supabase
-        child: const Icon(Icons.add),
       ),
     );
   }

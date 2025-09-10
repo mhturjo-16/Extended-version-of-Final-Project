@@ -1,3 +1,4 @@
+//note_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/db/note_db.dart';
 
@@ -9,39 +10,39 @@ class NotePage extends StatefulWidget {
 }
 
 class _NotePageState extends State<NotePage> {
-  final noteContoller = TextEditingController();
+  final noteController = TextEditingController();
   final noteDb = NoteDb();
+
+  // Show dialog to add a new note
   void addNewNote() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Add note"),
-        content: TextField(controller: noteContoller),
-
+        title: Text("Add Note"),
+        content: TextField(controller: noteController),
         actions: [
-          // Cancel Button
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              noteContoller.clear();
+              noteController.clear();
             },
             child: Text("Cancel"),
           ),
-
-          // Save Button
           TextButton(
             onPressed: () async {
-              final newNote = noteContoller.text;
+              final newNote = noteController.text.trim();
+              if (newNote.isEmpty) return;
+
               try {
                 await noteDb.createNote(newNote);
                 if (mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text("Note inserted")));
+                  ).showSnackBar(SnackBar(content: Text("Note added")));
                 }
+                noteController.clear();
                 Navigator.pop(context);
-
-                //noteContoller.clear();
+                setState(() {}); // Refresh the list to show new note
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(
@@ -57,6 +58,16 @@ class _NotePageState extends State<NotePage> {
     );
   }
 
+  // Fetch all notes from database
+  Future<List<Map<String, dynamic>>> fetchNotes() async {
+    try {
+      return await noteDb.getAllNotes();
+    } catch (e) {
+      print("Error fetching notes: $e");
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,6 +75,31 @@ class _NotePageState extends State<NotePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: addNewNote,
         child: Icon(Icons.add),
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: fetchNotes(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error loading notes"));
+          }
+
+          final notes = snapshot.data ?? [];
+
+          if (notes.isEmpty) {
+            return Center(child: Text("No notes yet"));
+          }
+
+          return ListView.builder(
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              final note = notes[index]['content'] ?? '';
+              return ListTile(title: Text(note));
+            },
+          );
+        },
       ),
     );
   }

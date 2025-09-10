@@ -2,25 +2,32 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NoteDb {
   final supabase = Supabase.instance.client;
-  final table = 'notes';
+  final String table = 'data';
 
-  // Create
-  Future<void> createNote(String note) async {
-    await supabase.from(table).insert({'content': note});
+  // ✅ Create note (content only)
+  Future<void> createNote(String content) async {
+    await supabase.from(table).insert({'content': content});
   }
 
-  // Read all notes
-  Future<List<Map<String, dynamic>>> getNotes() async {
+  // ✅ Get all notes (all users, for debugging)
+  Future<List<Map<String, dynamic>>> getAllNotes() async {
     final response = await supabase.from(table).select();
     return List<Map<String, dynamic>>.from(response);
   }
 
-  // Update
-  Future<void> updateNote(int id, String updatedNote) async {
-    await supabase.from(table).update({'content': updatedNote}).eq('id', id);
+  // ✅ Get notes for current user (if your table had user_id)
+  // Since your table only has 'content', we fetch all
+  Future<List<Map<String, dynamic>>> getUserNotes() async {
+    final response = await supabase.from(table).select();
+    return List<Map<String, dynamic>>.from(response);
   }
 
-  // Delete
+  // ✅ Update note by id
+  Future<void> updateNote(int id, String content) async {
+    await supabase.from(table).update({'content': content}).eq('id', id);
+  }
+
+  // ✅ Delete note by id
   Future<void> deleteNote(int id) async {
     await supabase.from(table).delete().eq('id', id);
   }

@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pages/signin_page.dart';
 import 'package:flutter_application_1/pages/signup_page.dart';
@@ -25,6 +26,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: '/signin',
+      theme: ThemeData(
+        scaffoldBackgroundColor:
+            Colors.transparent, // Scaffold নিজে transparent
+      ),
+      builder: (context, child) {
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 255, 255, 255), // light blue
+                Color.fromARGB(255, 27, 164, 169), // darker blue
+              ],
+            ),
+          ),
+          child: child,
+        );
+      },
       routes: {
         '/signin': (context) => const SigninPage(),
         '/signup': (context) => SignupPage(),
