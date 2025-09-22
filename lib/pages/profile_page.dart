@@ -1,4 +1,4 @@
-// lib/pages/profile_page.dart
+// profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/auth/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

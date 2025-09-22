@@ -1,9 +1,9 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pages/signin_page.dart';
 import 'package:flutter_application_1/pages/signup_page.dart';
 import 'package:flutter_application_1/pages/currency_converter_page.dart';
 import 'package:flutter_application_1/pages/profile_page.dart';
+import 'package:flutter_application_1/pages/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -25,20 +25,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/signin',
-      theme: ThemeData(
-        scaffoldBackgroundColor:
-            Colors.transparent, // Scaffold নিজে transparent
-      ),
+      initialRoute: '/splash',
+      theme: ThemeData(scaffoldBackgroundColor: Colors.transparent),
       builder: (context, child) {
+        // Apply gradient background to all screens
         return Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color.fromARGB(255, 255, 255, 255), // light blue
-                Color.fromARGB(255, 27, 164, 169), // darker blue
+                Color.fromARGB(255, 255, 255, 255),
+                Color.fromARGB(255, 50, 128, 57),
               ],
             ),
           ),
@@ -46,11 +44,11 @@ class MyApp extends StatelessWidget {
         );
       },
       routes: {
+        '/splash': (context) => const SplashScreen(),
         '/signin': (context) => const SigninPage(),
         '/signup': (context) => SignupPage(),
         '/converter': (context) => const CurrencyConverterPage(),
         '/profile': (context) => ProfilePage(),
-        //'/notes': (context) => const NotePage(),
       },
     );
   }

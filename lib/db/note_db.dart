@@ -1,15 +1,16 @@
+//note_db.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NoteDb {
   final supabase = Supabase.instance.client;
   final String table = 'data';
 
-  // ✅ Create note (content only)
+  //Create note
   Future<void> createNote(String content) async {
     await supabase.from(table).insert({'content': content});
   }
 
-  // ✅ Get all notes (all users, for debugging)
+  //Get all notes
   Future<List<Map<String, dynamic>>> getAllNotes() async {
     final response = await supabase.from(table).select();
     return List<Map<String, dynamic>>.from(response);
